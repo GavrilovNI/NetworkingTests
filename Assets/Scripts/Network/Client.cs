@@ -134,12 +134,17 @@ namespace Network
 
         public override void SendToAll<T>(T networkPacket)
         {
-            _netPacketProcessor.Send<T>(_netClient.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
+            Send(networkPacket);
         }
 
         public override void Send<T>(NetPeer peer, T networkPacket)
         {
-            _netPacketProcessor.Send<T>(_netClient.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
+            Send(networkPacket);
+        }
+
+        public void Send<T>(T networkPacket) where T : NetworkPacket, new()
+        {
+            _netPacketProcessor.Send(_netClient.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
         }
 
         public override void ApplyNetPacket<T>(T packet, NetPeer peer)
