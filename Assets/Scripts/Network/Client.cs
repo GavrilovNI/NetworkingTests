@@ -13,6 +13,7 @@ using UnityEngine;
 
 namespace Network
 {
+    [RequireComponent(typeof(NetObjectsContainer))]
     public class Client : NetworkManager
     {
         [Serializable]
@@ -39,6 +40,13 @@ namespace Network
 
         private NetworkPlayer _localNetworkPlayer;
 
+        [SerializeField] private NetObjectTransformable _playerPrefab;
+
+        public NetObjectTransformable GetLocalPlayerPrefab()
+        {
+            return _playerPrefab;
+        }
+
         private void Awake()
         {
             _netPacketProcessor.RegisterSystemTypes();
@@ -46,6 +54,7 @@ namespace Network
             RegisterPackets(_netPacketProcessor);
 
             NetObjectsContainer = GetComponent<NetObjectsContainer>();
+            NetObjectsContainer.SetNetManager(this);
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
@@ -136,6 +145,11 @@ namespace Network
         public override void SendToAll<T>(T networkPacket)
         {
             Send(networkPacket);
+        }
+        public override void SendToAll<T>(T networkPacket, NetPeer peer)
+        {
+            if(peer != _netClient.FirstPeer)
+                Send(networkPacket);
         }
 
         public override void Send<T>(NetPeer peer, T networkPacket)

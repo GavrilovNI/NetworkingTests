@@ -10,6 +10,7 @@ using Network.Packets;
 using Network.NetObjects;
 using Network.Utils.NetPacketProcessorUnityTypes;
 using Network.Utils.NetPacketProcessorSystemTypes;
+using System.Linq;
 
 namespace Network
 {
@@ -51,6 +52,7 @@ namespace Network
             RegisterPackets(_netPacketProcessor);
 
             NetObjectsContainer = GetComponent<NetObjectsContainer>();
+            NetObjectsContainer.SetNetManager(this);
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
@@ -101,7 +103,8 @@ namespace Network
             player.PlayerNetObjectId = playerObject.Id;
             x = playerObject.Id;
 
-            SendToAll(new CreateNetObject(playerObject));
+            SendToAll(new CreateNetObject(playerObject), peer);
+            Send(peer, new SpawnLocalPlayer(playerObject.Id));
         }
 
         private void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)
@@ -161,6 +164,17 @@ namespace Network
             _netPacketProcessor.ReadAllPackets(reader, peer);
         }
 
+        public override void SendToAll<T>(T networkPacket, NetPeer except)
+        {
+            //OnPeerConnected can be called after few players connected and already putted to _netServer.ConnectedPeerList 
+            //so, using _players.Keys instead of _netServer.ConnectedPeerList
+            //because players beeing putted to _players.Keys after every call of OnPeerConnected
+            //so only one player can be added to _players between 2 calls of OnPeerConnected
+            foreach (NetPeer peer in _players.Keys.Except(new NetPeer[] { except }))
+            {
+                Send(peer, networkPacket);
+            }
+        }
         public override void SendToAll<T>(T networkPacket)
         {
             //OnPeerConnected can be called after few players connected and already putted to _netServer.ConnectedPeerList 

@@ -10,13 +10,20 @@ namespace Network.NetObjects
         private int _nextId = 0;
         private Dictionary<int, NetObject> _netObjects = new Dictionary<int, NetObject>();
 
+        private NetworkManager _networkManager;
+
+        public void SetNetManager(NetworkManager networkManager)
+        {
+            _networkManager = networkManager;
+        }
+
         private void InitializeNetObject(NetObject netObject)
         {
             InitializeNetObject(netObject, _nextId++);
         }
         private void InitializeNetObject(NetObject netObject, int id)
         {
-            netObject.Initialize(id);
+            netObject.Initialize(id, _networkManager);
             _netObjects.Add(netObject.Id, netObject);
 
             netObject.transform.SetParent(transform);
@@ -41,6 +48,14 @@ namespace Network.NetObjects
         {
             T netObject = new GameObject().AddComponent<T>();
             InitializeNetObject(netObject, id);
+            return netObject;
+        }
+
+        public T CreateNetObject<T>(T prefab, int id) where T : NetObject
+        {
+            T netObject = MonoBehaviour.Instantiate(prefab);
+            InitializeNetObject(netObject, id);
+            netObject.name = prefab.name + " " + netObject.name;
             return netObject;
         }
 

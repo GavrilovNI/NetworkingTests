@@ -6,7 +6,7 @@ namespace Network.Packets
 {
     public class UpdatePlayerPosition : NetworkPacket
     {
-        public float Position { get; set; }
+        public Vector3 Position { get; set; }
 
         public override DeliveryMethod DeliveryMethod => DeliveryMethod.ReliableSequenced;
         public override PacketDirection PacketDirection => PacketDirection.ToServer;
@@ -15,7 +15,7 @@ namespace Network.Packets
         {
 
         }
-        public UpdatePlayerPosition(float position)
+        public UpdatePlayerPosition(Vector3 position)
         {
             Position = position;
         }
@@ -27,13 +27,11 @@ namespace Network.Packets
             if (player.PlayerNetObjectId < 0)
                 return;
 
-            Vector3 newPosition = new Vector3(Mathf.Clamp(Position, 0, 10), 0, 0);
-
-            UpdateNetObjectPosition packet = new UpdateNetObjectPosition(player.PlayerNetObjectId, newPosition);
+            UpdateNetObjectPosition packet = new UpdateNetObjectPosition(player.PlayerNetObjectId, Position);
 
             packet.Apply(manager, sender); // updating player position on server
 
-            manager.SendToAll(packet);
+            manager.SendToAll(packet, sender);
         }
     }
 }

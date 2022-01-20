@@ -7,14 +7,16 @@ namespace Network.NetObjects
     {
         private bool _initialized;
 
+        public NetworkManager NetworkManager { get; private set; }
         public int Id { get; private set; }
 
-        public void Initialize(int id)
+        public void Initialize(int id, NetworkManager networkManager)
         {
             if (_initialized)
                 throw new Exception("NetObject already initialized.");
 
             Id = id;
+            NetworkManager = networkManager;
             _initialized = true;
         }
     }
