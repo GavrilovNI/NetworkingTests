@@ -44,6 +44,7 @@ namespace Network
 
         public NetObjectTransformable GetLocalPlayerPrefab()
         {
+
             return _playerPrefab;
         }
 

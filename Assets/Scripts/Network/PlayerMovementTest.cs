@@ -8,7 +8,8 @@ namespace Network.Test
     [RequireComponent(typeof(NetObjectTransformable))]
     public class PlayerMovementTest : MonoBehaviour
     {
-        private NetObject _netObject;
+        private NetObjectTransformable _netObject;
+        private float _lastTimePositionUpdated;
 
         [SerializeField] private float _speed = 3f;
 
@@ -45,9 +46,8 @@ namespace Network.Test
                 newPosition = newPosition.Clamp(Vector3.zero, Vector3.one * 10);
 
                 transform.position = newPosition;
-
                 Client client = _netObject.NetworkManager as Client;
-                client?.Send(new UpdatePlayerPosition(newPosition));
+                client?.Send(new UpdatePlayerPosition(transform.position, _netObject.LifeTime));
             }
         }
     }

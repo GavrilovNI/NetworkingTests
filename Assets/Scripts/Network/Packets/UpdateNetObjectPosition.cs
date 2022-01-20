@@ -1,6 +1,7 @@
 ﻿using LiteNetLib;
 using UnityEngine;
 using Network.NetObjects;
+using System;
 
 namespace Network.Packets
 {
@@ -8,6 +9,7 @@ namespace Network.Packets
     {
         public int NetObjectId { get; set; }
         public Vector3 NewPosition { get; set; }
+        public float TimeSinceObjectCreated { get; set; }
 
         public override DeliveryMethod DeliveryMethod => DeliveryMethod.ReliableSequenced;
         public override PacketDirection PacketDirection => PacketDirection.ToClient;
@@ -16,10 +18,11 @@ namespace Network.Packets
         {
             
         }
-        public UpdateNetObjectPosition(int netObjectId, Vector3 newPosition)
+        public UpdateNetObjectPosition(int netObjectId, Vector3 newPosition, float timeSinceObjectCreated)
         {
             NetObjectId = netObjectId;
             NewPosition = newPosition;
+            TimeSinceObjectCreated = timeSinceObjectCreated;
         }
 
         public override void Apply(NetworkManager manager, NetPeer sender)
@@ -34,7 +37,21 @@ namespace Network.Packets
 #nullable disable
 
             if (netObject != null)
-                netObject.Position = NewPosition;
+            {
+                Vector3 lastPos = netObject.PositionChain.GetValue(netObject.PositionChain.Length - 1);
+                float dist = Vector3.Distance(lastPos, NewPosition);
+                float minSpeed = 1f;
+                float maxDeltaTime = dist / minSpeed;
+
+                float deltaTime = TimeSinceObjectCreated - netObject.LastTimePositionChanged;
+                if(deltaTime > maxDeltaTime)
+                    deltaTime = maxDeltaTime;
+
+                netObject.PositionChain.AddToChain(NewPosition, deltaTime);
+                //netObject.PositionChain.Normalize();
+                netObject.LastTimePositionChanged = TimeSinceObjectCreated;
+                netObject._realPosition.position = NewPosition;
+            }
         }
     }
 }
