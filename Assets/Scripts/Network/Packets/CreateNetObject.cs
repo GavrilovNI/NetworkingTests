@@ -14,6 +14,8 @@ namespace Network.Packets
         public Type Type { get; set; }
         public int NetObjectId { get; set; }
 
+        public Vector3 Position { get; set; }
+
         public override DeliveryMethod DeliveryMethod => DeliveryMethod.ReliableOrdered;
         public override PacketDirection PacketDirection => PacketDirection.ToClient;
 
@@ -25,11 +27,13 @@ namespace Network.Packets
         {
             Type = netObject.GetType();
             NetObjectId = netObject.Id;
+            Position = netObject.transform.position;
         }
 
         public override void Apply(NetworkManager manager, NetPeer sender)
         {
-            manager.NetObjectsContainer.CreateNetObject(Type, NetObjectId);
+            var netObject = manager.NetObjectsContainer.CreateNetObject(Type, NetObjectId);
+            netObject.transform.position = Position;
         }
     }
 }
