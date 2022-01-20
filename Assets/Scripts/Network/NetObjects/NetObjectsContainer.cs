@@ -7,17 +7,19 @@ namespace Network.NetObjects
 {
     public class NetObjectsContainer : MonoBehaviour
     {
-        private int _lastId = 0;
+        private int _nextId = 0;
         private Dictionary<int, NetObject> _netObjects = new Dictionary<int, NetObject>();
 
         private void InitializeNetObject(NetObject netObject)
         {
-            InitializeNetObject(netObject, _lastId++);
+            InitializeNetObject(netObject, _nextId++);
         }
         private void InitializeNetObject(NetObject netObject, int id)
         {
             netObject.Initialize(id);
             _netObjects.Add(netObject.Id, netObject);
+
+            netObject.transform.SetParent(transform);
             netObject.name = "NetObject(" + netObject.Id + ") [" + netObject.GetType().Name + "]";
         }
 
@@ -59,9 +61,14 @@ namespace Network.NetObjects
             return _netObjects[id];
         }
 
-        public void DestroyNetObject(int id)
+        private void DestroyNetObjectButKeepInDictionary(int id)
         {
             GameObject.Destroy(_netObjects[id].gameObject);
+        }
+
+        public void DestroyNetObject(int id)
+        {
+            DestroyNetObjectButKeepInDictionary(id);
             _netObjects.Remove(id);
         }
 
@@ -71,6 +78,20 @@ namespace Network.NetObjects
             {
                 action(netObject.Value);
             }
+        }
+
+        // In SafeForeach you can destroy NetObjects
+        public void SafeForeach(Action<NetObject> action)
+        {
+            _netObjects.ToList().ForEach(p => action(p.Value));
+        }
+
+        public void Clear()
+        {
+            SafeForeach(netObject => DestroyNetObjectButKeepInDictionary(netObject.Id));
+            _netObjects.Clear();
+
+            _nextId = 0;
         }
     }
 }

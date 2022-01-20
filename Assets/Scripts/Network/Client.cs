@@ -125,6 +125,7 @@ namespace Network
         private void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
             Debug.Log("[CLIENT] We disconnected because " + disconnectInfo.Reason);
+            NetObjectsContainer.Clear();
         }
 
         public override NetworkPlayer GetNetworkPlayer(NetPeer peer)
@@ -145,6 +146,14 @@ namespace Network
         public void Send<T>(T networkPacket) where T : NetworkPacket, new()
         {
             _netPacketProcessor.Send(_netClient.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
+        }
+
+        public void SendIfConnected<T>(T networkPacket) where T : NetworkPacket, new()
+        {
+            if (_netClient.ConnectedPeersCount > 0)
+            {
+                Send(networkPacket);
+            }
         }
 
         public override void ApplyNetPacket<T>(T packet, NetPeer peer)
