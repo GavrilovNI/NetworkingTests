@@ -85,24 +85,28 @@ namespace Network
             }
         }
 
+        //can be called after few players connected and putted to _netServer.ConnectedPeerList 
         private void OnPeerConnected(NetPeer peer)
         {
-            Debug.Log("[SERVER] We have new peer " + peer.EndPoint);
+            Debug.Log("[SERVER] New peer connected " + peer.EndPoint);
 
             NetworkPlayer player = new NetworkPlayer(peer);
             _players.Add(peer, player);
+
+            int x = -1;
 
             NetObjectsContainer.Foreach(netObject => Send(peer, new CreateNetObject(netObject)));
 
             NetObjectTransformable playerObject = NetObjectsContainer.CreateNetObject<NetObjectTransformable>();
             player.PlayerNetObjectId = playerObject.Id;
+            x = playerObject.Id;
 
             SendToAll(new CreateNetObject(playerObject));
         }
 
         private void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)
         {
-            Debug.Log("[SERVER] error " + socketErrorCode);
+            Debug.Log("[SERVER] Received error " + socketErrorCode);
         }
 
         private void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader,
@@ -142,7 +146,7 @@ namespace Network
 
         private void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            Debug.Log("[SERVER] peer disconnected " + peer.EndPoint + ", info: " + disconnectInfo.Reason);
+            Debug.Log("[SERVER] Peer disconnected " + peer.EndPoint + ", info: " + disconnectInfo.Reason);
 
             int playerNetObjectId = _players[peer].PlayerNetObjectId;
             SendToAll(new DestroyNetObject(playerNetObjectId));
@@ -153,13 +157,17 @@ namespace Network
 
         private void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            Console.WriteLine("[Server] received data. Processing...");
+            Console.WriteLine("[Server] Received data. Processing...");
             _netPacketProcessor.ReadAllPackets(reader, peer);
         }
 
         public override void SendToAll<T>(T networkPacket)
         {
-            foreach(NetPeer peer in _netServer.ConnectedPeerList)
+            //OnPeerConnected can be called after few players connected and already putted to _netServer.ConnectedPeerList 
+            //so, using _players.Keys instead of _netServer.ConnectedPeerList
+            //because players beeing putted to _players.Keys after every call of OnPeerConnected
+            //so only one player can be added to _players between 2 calls of OnPeerConnected
+            foreach (NetPeer peer in _players.Keys)
             {
                 Send(peer, networkPacket);
             }

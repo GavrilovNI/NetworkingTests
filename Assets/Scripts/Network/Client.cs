@@ -92,19 +92,19 @@ namespace Network
 
         private void OnPeerConnected(NetPeer peer)
         {
-            Debug.Log("[CLIENT] We connected to " + peer.EndPoint);
+            Debug.Log("[CLIENT] Connected to " + peer.EndPoint);
 
             _localNetworkPlayer = new NetworkPlayer(null);
         }
 
         private void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)
         {
-            Debug.Log("[CLIENT] We received error " + socketErrorCode);
+            Debug.Log("[CLIENT] Received error " + socketErrorCode);
         }
 
         private void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            Console.WriteLine("[Client] received data. Processing...");
+            Console.WriteLine("[Client] Received data. Processing...");
             _netPacketProcessor.ReadAllPackets(reader, peer);
         }
 
@@ -124,7 +124,7 @@ namespace Network
 
         private void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            Debug.Log("[CLIENT] We disconnected because " + disconnectInfo.Reason);
+            Debug.Log("[CLIENT] Disconnected. Reason: " + disconnectInfo.Reason);
             NetObjectsContainer.Clear();
         }
 

@@ -27,7 +27,6 @@ namespace Network.Test
             {
                 directionMultiplier += 1;
             }
-            Debug.Log(directionMultiplier);
             if(directionMultiplier != 0)
             {
                 _position += directionMultiplier * Time.fixedDeltaTime * _speed;
