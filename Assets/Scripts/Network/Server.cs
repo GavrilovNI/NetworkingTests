@@ -89,7 +89,7 @@ namespace Network
             }
         }
 
-        //can be called after few players connected and putted to _netServer.ConnectedPeerList 
+        //Warn: can be called after few players connected and putted to _netServer.ConnectedPeerList(Not after each one)
         private void OnPeerConnected(NetPeer peer)
         {
             Debug.Log("[SERVER] New peer connected " + peer.EndPoint);
@@ -109,6 +109,7 @@ namespace Network
 
             SendToAll(new CreateNetObject(playerObject), peer);
             Send(peer, new SpawnLocalPlayer(playerObject.Id));
+            playerObject.LastTimePositionChanged = Time.realtimeSinceStartup + peer.Ping / 1000f;
 
 
             #region PlayerRealPositionDebugging

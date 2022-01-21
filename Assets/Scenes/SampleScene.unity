@@ -293,7 +293,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _settings:
     Port: 5000
-    UpdateTime: 500
+    UpdateTime: 300
     Password: 
   _playerPrefab: {fileID: -6652950084956895350, guid: 379ee56b45039774aa437132457f9137, type: 3}
 --- !u!1 &963194225
@@ -424,6 +424,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _Settings:
     Port: 5000
-    UpdateTime: 500
+    UpdateTime: 300
     MaxConnections: 20
     Password: 

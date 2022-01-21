@@ -28,9 +28,7 @@ namespace Network.Packets
         public override void Apply(NetworkManager manager, NetPeer sender)
         {
             var target = manager.NetObjectsContainer.GetNetObject(NetObjectId) as NetObjectTransformable;
-            Debug.Log("Apply: " + manager.name + " " + target.Id);
             var netObject = manager.LocalNetObjectsContainer.CreateNetObject<NetObjectRealPositionShower>();
-            Debug.Log("Apply2: " + netObject.Id);
             netObject.Target = target;
         }
     }
