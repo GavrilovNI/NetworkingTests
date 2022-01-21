@@ -24,11 +24,12 @@ namespace Network.NetObjects
                 if (_target != null)
                 {
                     _target.PositionChain.ChainGrowed -= OnPositionChainGrowed;
+                    _target.BeforeDestroyed -= OnTargetDetroyed;
                 }
 
                 _target = value;
 
-                if(_target == null)
+                if (_target == null)
                 {
                     _model.SetActive(false);
                 }
@@ -36,6 +37,7 @@ namespace Network.NetObjects
                 {
                     _model.SetActive(true);
                     _target.PositionChain.ChainGrowed += OnPositionChainGrowed;
+                    _target.BeforeDestroyed += OnTargetDetroyed;
 
                     InterpolatingNode<Vector3> lastNode = _target.PositionChain.GetValue(_target.PositionChain.Length - 1);
                     OnPositionChainGrowed(lastNode);
@@ -49,6 +51,12 @@ namespace Network.NetObjects
             _model = GameObject.CreatePrimitive(PrimitiveType.Cube);
             _model.transform.SetParent(this.transform);
             _model.transform.localPosition = Vector3.zero;
+        }
+
+
+        private void OnTargetDetroyed(NetObject target)
+        {
+            Destroy(gameObject);
         }
 
         private void OnPositionChainGrowed(InterpolatingNode<Vector3> node)

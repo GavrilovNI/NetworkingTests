@@ -126,7 +126,7 @@ namespace Network
         {
             if (messageType == UnconnectedMessageType.BasicMessage && _netClient.ConnectedPeersCount == 0 && reader.GetInt() == 1)
             {
-                Debug.Log("[CLIENT] Received discovery response. Connecting to: " + remoteEndPoint);
+                //Debug.Log("[CLIENT] Received discovery response. Connecting to: " + remoteEndPoint);
                 _netClient.Connect(remoteEndPoint, _settings.Password);
             }
         }
@@ -140,6 +140,7 @@ namespace Network
         {
             Debug.Log("[CLIENT] Disconnected. Reason: " + disconnectInfo.Reason);
             NetObjectsContainer.Clear();
+            LocalNetObjectsContainer.Clear();
         }
 
         public override NetworkPlayer GetNetworkPlayer(NetPeer peer)

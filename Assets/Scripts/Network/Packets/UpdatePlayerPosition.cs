@@ -9,7 +9,7 @@ namespace Network.Packets
         public Vector3 Position { get; set; }
         public float DeltaTime { get; set; }
 
-        public override DeliveryMethod DeliveryMethod => DeliveryMethod.ReliableSequenced;
+        public override DeliveryMethod DeliveryMethod => DeliveryMethod.Sequenced;
         public override PacketDirection PacketDirection => PacketDirection.ToServer;
 
         public UpdatePlayerPosition()

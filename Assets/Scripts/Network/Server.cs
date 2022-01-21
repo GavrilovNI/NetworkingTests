@@ -68,6 +68,9 @@ namespace Network
             _netServer = new NetManager(_listener);
             _netServer.BroadcastReceiveEnabled = true;
             _netServer.UpdateTime = _Settings.UpdateTime;
+
+            _netServer.SimulationPacketLossChance = 50;
+            _netServer.SimulatePacketLoss = true;
         }
 
         private void Start()
@@ -109,7 +112,6 @@ namespace Network
 
             SendToAll(new CreateNetObject(playerObject), peer);
             Send(peer, new SpawnLocalPlayer(playerObject.Id));
-            playerObject.LastTimePositionChanged = Time.realtimeSinceStartup + peer.Ping / 1000f;
 
 
             #region PlayerRealPositionDebugging
@@ -140,7 +142,7 @@ namespace Network
         {
             if (messageType == UnconnectedMessageType.Broadcast)
             {
-                Debug.Log("[SERVER] Received discovery request. Send discovery response");
+                //Debug.Log("[SERVER] Received discovery request. Send discovery response");
                 NetDataWriter resp = new NetDataWriter();
                 resp.Put(1);
                 _netServer.SendUnconnectedMessage(resp, remoteEndPoint);
@@ -175,8 +177,9 @@ namespace Network
             Debug.Log("[SERVER] Peer disconnected " + peer.EndPoint + ", info: " + disconnectInfo.Reason);
 
             int playerNetObjectId = _players[peer].PlayerNetObjectId;
-            SendToAll(new DestroyNetObject(playerNetObjectId));
+            Debug.Log("[SERVER] Peer disconnected " + playerNetObjectId);
             NetObjectsContainer.DestroyNetObject(playerNetObjectId);
+            SendToAll(new DestroyNetObject(playerNetObjectId));
 
             _players.Remove(peer);
         }

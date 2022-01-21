@@ -5,6 +5,8 @@ namespace Network.NetObjects
 {
     public abstract class NetObject : MonoBehaviour
     {
+        public event Action<NetObject> BeforeDestroyed;
+
         private bool _initialized;
 
         public NetworkManager NetworkManager { get; private set; }
@@ -18,6 +20,11 @@ namespace Network.NetObjects
             Id = id;
             NetworkManager = networkManager;
             _initialized = true;
+        }
+
+        private void OnDestroy()
+        {
+            BeforeDestroyed?.Invoke(this);
         }
     }
 }
