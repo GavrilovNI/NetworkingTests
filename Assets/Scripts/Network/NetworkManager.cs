@@ -6,10 +6,10 @@ using UnityEngine;
 
 namespace Network
 {
-    [RequireComponent(typeof(NetObjectsContainer))]
     public abstract class NetworkManager : MonoBehaviour
     {
         public NetObjectsContainer NetObjectsContainer { get; protected set; }
+        public NetObjectsContainer LocalNetObjectsContainer { get; protected set; }
 
 
         public abstract NetworkPlayer GetNetworkPlayer(NetPeer peer);
@@ -27,6 +27,7 @@ namespace Network
             netPacketProcessor.SubscribeReusable<CreateNetObject, NetPeer>(ApplyNetPacket);
             netPacketProcessor.SubscribeReusable<DestroyNetObject, NetPeer>(ApplyNetPacket);
             netPacketProcessor.SubscribeReusable<SpawnLocalPlayer, NetPeer>(ApplyNetPacket);
+            netPacketProcessor.SubscribeReusable<CreateNetObjectRealPositionShower, NetPeer>(ApplyNetPacket);
         }
     }
 

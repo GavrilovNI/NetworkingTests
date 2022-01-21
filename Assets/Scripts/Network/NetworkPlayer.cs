@@ -18,5 +18,6 @@ namespace Network
         {
             _netPeer = netPeer;
         }
+
     }
 }

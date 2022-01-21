@@ -38,7 +38,7 @@ namespace Network.Packets
 
             if (netObject != null)
             {
-                Vector3 lastPos = netObject.PositionChain.GetValue(netObject.PositionChain.Length - 1);
+                Vector3 lastPos = netObject.PositionChain.GetValue(netObject.PositionChain.Length - 1).Value;
                 float dist = Vector3.Distance(lastPos, NewPosition);
                 float minSpeed = 1f;
                 float maxDeltaTime = dist / minSpeed;
@@ -46,11 +46,12 @@ namespace Network.Packets
                 float deltaTime = TimeSinceObjectCreated - netObject.LastTimePositionChanged;
                 if(deltaTime > maxDeltaTime)
                     deltaTime = maxDeltaTime;
+                if (deltaTime < 0)
+                    deltaTime = 0;
 
-                netObject.PositionChain.AddToChain(NewPosition, deltaTime);
+                netObject.PositionChain.AddToChain(new InterpolatingNode<Vector3>(NewPosition, deltaTime));
                 //netObject.PositionChain.Normalize();
                 netObject.LastTimePositionChanged = TimeSinceObjectCreated;
-                netObject._realPosition.position = NewPosition;
             }
         }
     }

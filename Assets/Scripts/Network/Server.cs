@@ -14,7 +14,6 @@ using System.Linq;
 
 namespace Network
 {
-    [RequireComponent(typeof(NetObjectsContainer))]
     public class Server : NetworkManager
     {
         [Serializable]
@@ -39,7 +38,6 @@ namespace Network
         private readonly NetPacketProcessor _netPacketProcessor = new NetPacketProcessor();
         private EventBasedNetListener _listener;
         private NetManager _netServer;
-        private NetDataWriter _dataWriter;
 
         private Dictionary<NetPeer, NetworkPlayer> _players = new Dictionary<NetPeer, NetworkPlayer>();
 
@@ -51,8 +49,13 @@ namespace Network
             _netPacketProcessor.RegisterUnityTypes();
             RegisterPackets(_netPacketProcessor);
 
-            NetObjectsContainer = GetComponent<NetObjectsContainer>();
+            NetObjectsContainer = new GameObject("NetObjects").AddComponent<NetObjectsContainer>();
+            NetObjectsContainer.transform.SetParent(transform); 
             NetObjectsContainer.SetNetManager(this);
+
+            LocalNetObjectsContainer = new GameObject("LocalNetObjects").AddComponent<NetObjectsContainer>();
+            LocalNetObjectsContainer.transform.SetParent(transform);
+            LocalNetObjectsContainer.SetNetManager(this);
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
@@ -62,7 +65,6 @@ namespace Network
             _listener.PeerConnectedEvent += OnPeerConnected;
             _listener.PeerDisconnectedEvent += OnPeerDisconnected;
 
-            _dataWriter = new NetDataWriter();
             _netServer = new NetManager(_listener);
             _netServer.BroadcastReceiveEnabled = true;
             _netServer.UpdateTime = _Settings.UpdateTime;
@@ -92,19 +94,39 @@ namespace Network
         {
             Debug.Log("[SERVER] New peer connected " + peer.EndPoint);
 
-            NetworkPlayer player = new NetworkPlayer(peer);
-            _players.Add(peer, player);
+            NetworkPlayer newPlayer = new NetworkPlayer(peer);
+            _players.Add(peer, newPlayer);
 
             int x = -1;
 
-            NetObjectsContainer.Foreach(netObject => Send(peer, new CreateNetObject(netObject)));
+            NetObjectsContainer.Foreach(netObject => {
+                    Send(peer, new CreateNetObject(netObject));
+                });
 
             NetObjectTransformable playerObject = NetObjectsContainer.CreateNetObject<NetObjectTransformable>();
-            player.PlayerNetObjectId = playerObject.Id;
+            newPlayer.PlayerNetObjectId = playerObject.Id;
             x = playerObject.Id;
 
             SendToAll(new CreateNetObject(playerObject), peer);
             Send(peer, new SpawnLocalPlayer(playerObject.Id));
+
+
+            #region PlayerRealPositionDebugging
+            var positionShowerPacket = new CreateNetObjectRealPositionShower(playerObject.Id);
+            positionShowerPacket.Apply(this, peer);
+            SendToAll(positionShowerPacket, peer);
+
+            foreach (var player in _players)
+            {
+                if (player.Value == newPlayer)
+                    continue;
+                int playerNetObjectId = player.Value.PlayerNetObjectId;
+                if(playerNetObjectId >= 0)
+                {
+                    Send(peer, new CreateNetObjectRealPositionShower(playerNetObjectId));
+                }
+            }
+            #endregion
         }
 
         private void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)

@@ -13,7 +13,6 @@ using UnityEngine;
 
 namespace Network
 {
-    [RequireComponent(typeof(NetObjectsContainer))]
     public class Client : NetworkManager
     {
         [Serializable]
@@ -54,8 +53,13 @@ namespace Network
             _netPacketProcessor.RegisterUnityTypes();
             RegisterPackets(_netPacketProcessor);
 
-            NetObjectsContainer = GetComponent<NetObjectsContainer>();
+            NetObjectsContainer = new GameObject("NetObjects").AddComponent<NetObjectsContainer>();
+            NetObjectsContainer.transform.SetParent(transform);
             NetObjectsContainer.SetNetManager(this);
+
+            LocalNetObjectsContainer = new GameObject("LocalNetObjects").AddComponent<NetObjectsContainer>();
+            LocalNetObjectsContainer.transform.SetParent(transform);
+            LocalNetObjectsContainer.SetNetManager(this);
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
