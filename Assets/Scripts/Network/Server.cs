@@ -69,8 +69,14 @@ namespace Network
             _netServer.BroadcastReceiveEnabled = true;
             _netServer.UpdateTime = _Settings.UpdateTime;
 
+
+
+            _netServer.SimulationMinLatency = 0;
+            _netServer.SimulationMaxLatency = 1000;
+            //_netServer.SimulateLatency = true;
+
             _netServer.SimulationPacketLossChance = 50;
-            _netServer.SimulatePacketLoss = true;
+            //_netServer.SimulatePacketLoss = true;
         }
 
         private void Start()

@@ -7,7 +7,6 @@ namespace Network.Packets
     public class UpdatePlayerPosition : NetworkPacket
     {
         public Vector3 Position { get; set; }
-        public float DeltaTime { get; set; }
 
         public override DeliveryMethod DeliveryMethod => DeliveryMethod.Sequenced;
         public override PacketDirection PacketDirection => PacketDirection.ToServer;
@@ -16,10 +15,9 @@ namespace Network.Packets
         {
 
         }
-        public UpdatePlayerPosition(Vector3 position, float deltaTime)
+        public UpdatePlayerPosition(Vector3 position)
         {
             Position = position;
-            DeltaTime = deltaTime;
         }
 
         public override void Apply(NetworkManager manager, NetPeer sender)
@@ -29,7 +27,14 @@ namespace Network.Packets
             if (player.PlayerNetObjectId < 0)
                 return;
 
-            UpdateNetObjectPosition packet = new UpdateNetObjectPosition(player.PlayerNetObjectId, Position, DeltaTime);
+            const float playerMovementDeltaTime = 0.02f;
+            UpdateNetObjectPosition packet = new UpdateNetObjectPosition(player.PlayerNetObjectId, Position, playerMovementDeltaTime);
+
+            //uncomment to lost packets
+            /*var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.transform.position = Position;
+            MonoBehaviour.Destroy(go, 1);
+            */
 
             packet.Apply(manager, sender); // updating player position on server
 

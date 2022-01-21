@@ -11,7 +11,6 @@ namespace Network.Test
         private NetObjectTransformable _netObject;
 
         private float _lastTimePositionSent;
-        private bool _wasMoving = false;
 
         [SerializeField] private float _speed = 3f;
 
@@ -44,27 +43,16 @@ namespace Network.Test
             bool isMoving = directionMultiplier != Vector3.zero;
             if (isMoving)
             {
-                float deltaMessageTime;
-                if(_wasMoving)
-                {
-                    deltaMessageTime = Time.realtimeSinceStartup - _lastTimePositionSent;
-                }
-                else
-                {
-                    deltaMessageTime = Time.fixedDeltaTime;
-                }
-
                 Vector3 newPosition = transform.position + directionMultiplier.normalized * Time.fixedDeltaTime * _speed;
 
                 newPosition = newPosition.Clamp(Vector3.zero, Vector3.one * 10);
 
                 transform.position = newPosition;
                 Client client = _netObject.NetworkManager as Client;
-                client?.Send(new UpdatePlayerPosition(transform.position, deltaMessageTime));
+                client?.Send(new UpdatePlayerPosition(transform.position));
 
                 _lastTimePositionSent = Time.realtimeSinceStartup;
             }
-            _wasMoving = isMoving;
         }
     }
 }

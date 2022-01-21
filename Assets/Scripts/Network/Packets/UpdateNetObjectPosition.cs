@@ -32,32 +32,11 @@ namespace Network.Packets
             if (netObjectsContainer.HasNetObject(NetObjectId) == false)
                 return;
 
-#nullable enable
-            NetObjectTransformable? netObject = netObjectsContainer.GetNetObject(NetObjectId) as NetObjectTransformable;
-#nullable disable
+            NetObjectTransformable netObject = netObjectsContainer.GetNetObject(NetObjectId) as NetObjectTransformable;
 
             if (netObject != null)
             {
-                /*Vector3 lastPos = netObject.PositionChain.GetValue(netObject.PositionChain.Length - 1).Value;
-                float dist = Vector3.Distance(lastPos, NewPosition);
-                float minSpeed = 1f;
-                float maxDeltaTime = dist / minSpeed;
-
-                float updateTime = Time.realtimeSinceStartup - sender.Ping / 1000f;
-                float deltaTime = updateTime - netObject.LastTimePositionChanged;
-                //if(deltaTime > maxDeltaTime)
-                //    deltaTime = maxDeltaTime;
-                if (deltaTime < 0)
-                    deltaTime = 0;
-                Debug.Log("Delta " + deltaTime);
-                Debug.Log("Distance " + dist);
-                Debug.Log("Speed " + dist/deltaTime);
-                if(dist > 0.5f)
-                    Debug.Log("-----------------------------------------------");*/
-
                 netObject.PositionChain.AddToChain(new InterpolatingNode<Vector3>(NewPosition, DeltaTime));
-                //netObject.PositionChain.Normalize();
-                //netObject.LastTimePositionChanged = updateTime;
             }
         }
     }
