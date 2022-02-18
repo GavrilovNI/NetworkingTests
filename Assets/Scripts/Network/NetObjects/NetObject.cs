@@ -22,6 +22,8 @@ namespace Network.NetObjects
             _initialized = true;
         }
 
+
+
         private void OnDestroy()
         {
             BeforeDestroyed?.Invoke(this);

@@ -10,13 +10,13 @@ namespace Network
 {
     public class NetworkPlayer
     {
-        private readonly NetPeer _netPeer;
+        public readonly NetPeer Peer;
 
         public int PlayerNetObjectId = -1;
 
         public NetworkPlayer(NetPeer netPeer)
         {
-            _netPeer = netPeer;
+            Peer = netPeer;
         }
 
     }

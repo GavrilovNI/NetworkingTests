@@ -37,26 +37,13 @@ namespace Network
 
         private readonly NetPacketProcessor _netPacketProcessor = new NetPacketProcessor();
         private EventBasedNetListener _listener;
-        private NetManager _netServer;
+        private NetManager _netManager;
 
         private Dictionary<NetPeer, NetworkPlayer> _players = new Dictionary<NetPeer, NetworkPlayer>();
 
 
-
-        private void Awake()
+        private void IntializeListener()
         {
-            _netPacketProcessor.RegisterSystemTypes();
-            _netPacketProcessor.RegisterUnityTypes();
-            RegisterPackets(_netPacketProcessor);
-
-            NetObjectsContainer = new GameObject("NetObjects").AddComponent<NetObjectsContainer>();
-            NetObjectsContainer.transform.SetParent(transform); 
-            NetObjectsContainer.SetNetManager(this);
-
-            LocalNetObjectsContainer = new GameObject("LocalNetObjects").AddComponent<NetObjectsContainer>();
-            LocalNetObjectsContainer.transform.SetParent(transform);
-            LocalNetObjectsContainer.SetNetManager(this);
-
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
             _listener.NetworkErrorEvent += OnNetworkError;
@@ -64,37 +51,47 @@ namespace Network
             _listener.NetworkReceiveUnconnectedEvent += OnNetworkReceiveUnconnected;
             _listener.PeerConnectedEvent += OnPeerConnected;
             _listener.PeerDisconnectedEvent += OnPeerDisconnected;
+        }
 
-            _netServer = new NetManager(_listener);
-            _netServer.BroadcastReceiveEnabled = true;
-            _netServer.UpdateTime = _Settings.UpdateTime;
+        private void Awake()
+        {
+            _netPacketProcessor.RegisterSystemTypes();
+            _netPacketProcessor.RegisterUnityTypes();
+            RegisterPackets(_netPacketProcessor);
+
+            InitializeNetObjectContainers();
+            IntializeListener();
+
+            _netManager = new NetManager(_listener);
+            _netManager.BroadcastReceiveEnabled = true;
+            _netManager.UpdateTime = _Settings.UpdateTime;
 
 
 
-            _netServer.SimulationMinLatency = 0;
-            _netServer.SimulationMaxLatency = 1000;
+            _netManager.SimulationMinLatency = 0;
+            _netManager.SimulationMaxLatency = 1000;
             //_netServer.SimulateLatency = true;
 
-            _netServer.SimulationPacketLossChance = 50;
+            _netManager.SimulationPacketLossChance = 50;
             //_netServer.SimulatePacketLoss = true;
         }
 
         private void Start()
         {
-            _netServer.Start(_Settings.Port);
+            _netManager.Start(_Settings.Port);
         }
 
         private void Update()
         {
-            _netServer.PollEvents();
+            _netManager.PollEvents();
         }
 
         private void OnDestroy()
         {
-            if (_netServer != null)
+            if (_netManager != null)
             {
-                _netServer.DisconnectAll();
-                _netServer.Stop();
+                _netManager.DisconnectAll();
+                _netManager.Stop();
             }
         }
 
@@ -103,39 +100,49 @@ namespace Network
         {
             Debug.Log("[SERVER] New peer connected " + peer.EndPoint);
 
-            NetworkPlayer newPlayer = new NetworkPlayer(peer);
-            _players.Add(peer, newPlayer);
+            NetworkPlayer player = new NetworkPlayer(peer);
+            _players.Add(peer, player);
 
-            int x = -1;
+
+            SpawnPlayer(player);
+            SpawnPlayerRealPosition(player);
+        }
+
+        private void SpawnPlayer(NetworkPlayer player)
+        {
+            if (player.PlayerNetObjectId >= 0)
+                throw new InvalidOperationException("Player already spawned.");
 
             NetObjectsContainer.Foreach(netObject => {
-                    Send(peer, new CreateNetObject(netObject));
-                });
+                Send(player.Peer, new CreateNetObject(netObject));
+            });
 
             NetObjectTransformable playerObject = NetObjectsContainer.CreateNetObject<NetObjectTransformable>();
-            newPlayer.PlayerNetObjectId = playerObject.Id;
-            x = playerObject.Id;
+            player.PlayerNetObjectId = playerObject.Id;
 
-            SendToAll(new CreateNetObject(playerObject), peer);
-            Send(peer, new SpawnLocalPlayer(playerObject.Id));
+            SendToAll(new CreateNetObject(playerObject), player.Peer);
+            Send(player.Peer, new SpawnLocalPlayer(playerObject.Id));
+        }
 
+        private void SpawnPlayerRealPosition(NetworkPlayer player)
+        {
+            if (player.PlayerNetObjectId < 0)
+                throw new InvalidOperationException("Player not spawned.");
 
-            #region PlayerRealPositionDebugging
-            var positionShowerPacket = new CreateNetObjectRealPositionShower(playerObject.Id);
-            positionShowerPacket.Apply(this, peer);
-            SendToAll(positionShowerPacket, peer);
+            var positionShowerPacket = new CreateNetObjectRealPositionShower(player.PlayerNetObjectId);
+            positionShowerPacket.Apply(this, player.Peer);
+            SendToAll(positionShowerPacket, player.Peer);
 
-            foreach (var player in _players)
+            foreach (var otherPlayer in _players)
             {
-                if (player.Value == newPlayer)
+                if (otherPlayer.Value == player)
                     continue;
-                int playerNetObjectId = player.Value.PlayerNetObjectId;
-                if(playerNetObjectId >= 0)
+                int playerNetObjectId = otherPlayer.Value.PlayerNetObjectId;
+                if (playerNetObjectId >= 0)
                 {
-                    Send(peer, new CreateNetObjectRealPositionShower(playerNetObjectId));
+                    Send(player.Peer, new CreateNetObjectRealPositionShower(playerNetObjectId));
                 }
             }
-            #endregion
         }
 
         private void OnNetworkError(IPEndPoint endPoint, SocketError socketErrorCode)
@@ -151,14 +158,14 @@ namespace Network
                 //Debug.Log("[SERVER] Received discovery request. Send discovery response");
                 NetDataWriter resp = new NetDataWriter();
                 resp.Put(1);
-                _netServer.SendUnconnectedMessage(resp, remoteEndPoint);
+                _netManager.SendUnconnectedMessage(resp, remoteEndPoint);
             }
         }
 
         private void OnConnectionRequest(ConnectionRequest request)
         {
             Debug.Log("[SERVER] Peer trying to connect: " + request.RemoteEndPoint);
-            if (_netServer.ConnectedPeersCount < _Settings.MaxConnections)
+            if (_netManager.ConnectedPeersCount < _Settings.MaxConnections)
             {
                 if (_Settings.Password == String.Empty)
                 {
@@ -183,7 +190,6 @@ namespace Network
             Debug.Log("[SERVER] Peer disconnected " + peer.EndPoint + ", info: " + disconnectInfo.Reason);
 
             int playerNetObjectId = _players[peer].PlayerNetObjectId;
-            Debug.Log("[SERVER] Peer disconnected " + playerNetObjectId);
             NetObjectsContainer.DestroyNetObject(playerNetObjectId);
             SendToAll(new DestroyNetObject(playerNetObjectId));
 
@@ -202,10 +208,7 @@ namespace Network
             //so, using _players.Keys instead of _netServer.ConnectedPeerList
             //because players beeing putted to _players.Keys after every call of OnPeerConnected
             //so only one player can be added to _players between 2 calls of OnPeerConnected
-            foreach (NetPeer peer in _players.Keys.Except(new NetPeer[] { except }))
-            {
-                Send(peer, networkPacket);
-            }
+            Send(_players.Keys.Except(new NetPeer[] { except }), networkPacket);
         }
         public override void SendToAll<T>(T networkPacket)
         {
@@ -213,10 +216,7 @@ namespace Network
             //so, using _players.Keys instead of _netServer.ConnectedPeerList
             //because players beeing putted to _players.Keys after every call of OnPeerConnected
             //so only one player can be added to _players between 2 calls of OnPeerConnected
-            foreach (NetPeer peer in _players.Keys)
-            {
-                Send(peer, networkPacket);
-            }
+            Send(_players.Keys, networkPacket);
         }
 
         public override void Send<T>(NetPeer peer, T networkPacket)

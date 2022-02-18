@@ -33,7 +33,7 @@ namespace Network
         [SerializeField] private Settings _settings = new Settings();
 
         private EventBasedNetListener _listener;
-        private NetManager _netClient;
+        private NetManager _netManager;
 
         private readonly NetPacketProcessor _netPacketProcessor = new NetPacketProcessor();
 
@@ -47,20 +47,8 @@ namespace Network
             return _playerPrefab;
         }
 
-        private void Awake()
+        private void IntializeListener()
         {
-            _netPacketProcessor.RegisterSystemTypes();
-            _netPacketProcessor.RegisterUnityTypes();
-            RegisterPackets(_netPacketProcessor);
-
-            NetObjectsContainer = new GameObject("NetObjects").AddComponent<NetObjectsContainer>();
-            NetObjectsContainer.transform.SetParent(transform);
-            NetObjectsContainer.SetNetManager(this);
-
-            LocalNetObjectsContainer = new GameObject("LocalNetObjects").AddComponent<NetObjectsContainer>();
-            LocalNetObjectsContainer.transform.SetParent(transform);
-            LocalNetObjectsContainer.SetNetManager(this);
-
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
             _listener.NetworkErrorEvent += OnNetworkError;
@@ -68,39 +56,50 @@ namespace Network
             _listener.NetworkReceiveUnconnectedEvent += OnNetworkReceiveUnconnected;
             _listener.PeerConnectedEvent += OnPeerConnected;
             _listener.PeerDisconnectedEvent += OnPeerDisconnected;
+        }
 
-            _netClient = new NetManager(_listener);
-            _netClient.UnconnectedMessagesEnabled = true;
-            _netClient.UpdateTime = _settings.UpdateTime;
+
+        private void Awake()
+        {
+            _netPacketProcessor.RegisterSystemTypes();
+            _netPacketProcessor.RegisterUnityTypes();
+            RegisterPackets(_netPacketProcessor);
+
+            InitializeNetObjectContainers();
+            IntializeListener();
+
+            _netManager = new NetManager(_listener);
+            _netManager.UnconnectedMessagesEnabled = true;
+            _netManager.UpdateTime = _settings.UpdateTime;
         }
 
         private void Start()
         {
 
-            _netClient.Start();
+            _netManager.Start();
         }
 
         private void Update()
         {
-            _netClient.PollEvents();
+            _netManager.PollEvents();
 
-            var peer = _netClient.FirstPeer;
+            var peer = _netManager.FirstPeer;
             if (peer != null && peer.ConnectionState == ConnectionState.Connected)
             {
 
             }
             else
             {
-                _netClient.SendBroadcast(new byte[] { 1 }, _settings.Port);
+                _netManager.SendBroadcast(new byte[] { 1 }, _settings.Port);
             }
         }
 
         private void OnDestroy()
         {
-            if (_netClient != null)
+            if (_netManager != null)
             {
-                _netClient.DisconnectAll();
-                _netClient.Stop();
+                _netManager.DisconnectAll();
+                _netManager.Stop();
             }
         }
 
@@ -124,10 +123,10 @@ namespace Network
 
         private void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
         {
-            if (messageType == UnconnectedMessageType.BasicMessage && _netClient.ConnectedPeersCount == 0 && reader.GetInt() == 1)
+            if (messageType == UnconnectedMessageType.BasicMessage && _netManager.ConnectedPeersCount == 0 && reader.GetInt() == 1)
             {
                 //Debug.Log("[CLIENT] Received discovery response. Connecting to: " + remoteEndPoint);
-                _netClient.Connect(remoteEndPoint, _settings.Password);
+                _netManager.Connect(remoteEndPoint, _settings.Password);
             }
         }
 
@@ -154,7 +153,7 @@ namespace Network
         }
         public override void SendToAll<T>(T networkPacket, NetPeer peer)
         {
-            if(peer != _netClient.FirstPeer)
+            if(peer != _netManager.FirstPeer)
                 Send(networkPacket);
         }
 
@@ -165,12 +164,12 @@ namespace Network
 
         public void Send<T>(T networkPacket) where T : NetworkPacket, new()
         {
-            _netPacketProcessor.Send(_netClient.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
+            _netPacketProcessor.Send(_netManager.FirstPeer, networkPacket, networkPacket.DeliveryMethod);
         }
 
         public void SendIfConnected<T>(T networkPacket) where T : NetworkPacket, new()
         {
-            if (_netClient.ConnectedPeersCount > 0)
+            if (_netManager.ConnectedPeersCount > 0)
             {
                 Send(networkPacket);
             }
